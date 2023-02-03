@@ -678,8 +678,8 @@ VectorVec4d HybridAStar::GetSearchedTree()
         {
             for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k)
             {
-                printf("GetSearchedTree 0\n");
-                printf(" %d %d %d : %d %d %d \n", i, j, k, STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, STATE_GRID_SIZE_PHI_);
+                // printf("GetSearchedTree 0\n");
+                // printf(" %d %d %d : %d %d %d \n", i, j, k, STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, STATE_GRID_SIZE_PHI_);
                 if (state_node_map_[i][j][k] == nullptr || state_node_map_[i][j][k]->parent_node_ == nullptr)
                 {
                     continue;
@@ -707,6 +707,8 @@ VectorVec4d HybridAStar::GetSearchedTree()
             }
         }
     }
+
+    ROS_ERROR("GetSearchedTree return");
 
     return tree;
 }

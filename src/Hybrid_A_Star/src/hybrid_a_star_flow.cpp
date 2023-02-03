@@ -104,8 +104,8 @@ void HybridAStarFlow::Run()
     }
     costmap_deque_.clear();
     ROS_ERROR("7");
-
-    while (HasStartPose() && HasGoalPose())
+    bool findPath = false;
+    while (!findPath && HasStartPose() && HasGoalPose())
     {
         InitPoseData();
         ROS_ERROR("8");
@@ -125,12 +125,13 @@ void HybridAStarFlow::Run()
 
         if (kinodynamic_astar_searcher_ptr_->Search(start_state, goal_state))
         {
+            findPath = true;
             ROS_ERROR("10");
             auto path = kinodynamic_astar_searcher_ptr_->GetPath();
             ROS_ERROR("10-1");
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
-            ROS_ERROR("10-2");
+            ROS_ERROR("10-2 问题在这");
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
 
             ROS_ERROR("11");
