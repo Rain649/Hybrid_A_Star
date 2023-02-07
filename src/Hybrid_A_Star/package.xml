@@ -24,6 +24,9 @@
     <build_export_depend>sensor_msgs</build_export_depend>
     <exec_depend>sensor_msgs</exec_depend>
 
+    <build_depend>libgoogle-glog-dev</build_depend>
+    <exec_depend>libgoogle-glog-dev</exec_depend>
+
     <export>
     </export>
 
