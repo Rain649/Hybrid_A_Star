@@ -160,7 +160,7 @@ Visualization Manager:
       Marker Topic: /run_hybrid_astar/searched_tree
       Name: Searched Tree
       Namespaces:
-        searched_tree: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -168,7 +168,7 @@ Visualization Manager:
       Marker Topic: /run_hybrid_astar/vehicle_path
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -312,6 +312,15 @@ Visualization Manager:
       Reference Frame: ground_link
       Show Trail: false
       Value: true
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Axes
+      Radius: 0.10000000149011612
+      Reference Frame: vehicle_base_link
+      Show Trail: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -340,7 +349,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 37.23703384399414
+      Distance: 99.49683380126953
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -348,17 +357,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 9.614648818969727
-        Y: -13.418814659118652
-        Z: 0.9080365896224976
+        X: 14.632379531860352
+        Y: 1.4151113033294678
+        Z: 10.372346878051758
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4403976202011108
+      Pitch: 1.0653979778289795
       Target Frame: <Fixed Frame>
-      Yaw: 3.1154000759124756
+      Yaw: 3.1053948402404785
     Saved: ~
 Window Geometry:
   Displays:

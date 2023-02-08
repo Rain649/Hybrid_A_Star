@@ -41,6 +41,7 @@ HybridAStar::~HybridAStar()
 void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_upper,
                        double state_grid_resolution, double map_grid_resolution)
 {
+
     SetVehicleShape(4.0, 1.9, 1.3);
 
     map_x_lower_ = x_lower;
@@ -55,6 +56,10 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
 
     MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_) / MAP_GRID_RESOLUTION_);
     MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) / MAP_GRID_RESOLUTION_);
+
+    ROS_INFO("x_lower: %f,x_upper: %f,y_lower: %f ,y_upper: %f ,state_grid_resolution: %f ,map_grid_resolution: %f ", x_lower, x_upper, y_lower, y_upper, state_grid_resolution, map_grid_resolution);
+    ROS_INFO("STATE_GRID_SIZE_X_: %d,STATE_GRID_SIZE_Y_: %d,MAP_GRID_SIZE_X_: %d ,MAP_GRID_SIZE_Y_: %d ", STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, MAP_GRID_SIZE_X_, MAP_GRID_SIZE_Y_);
+    // pause();
 
     if (map_data_)
     {
@@ -245,7 +250,7 @@ bool HybridAStar::CheckCollision(const double &x, const double &y, const double 
     }
 
     check_collision_use_time += timer.End();
-    num_check_collision++;
+    ++num_check_collision;
     return true;
 }
 
@@ -655,7 +660,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
             }
         }
 
-        count++;
+        ++count;
         if (count > 50000)
         {
             ROS_WARN("Exceeded the number of iterations, the search failed");
@@ -678,7 +683,7 @@ VectorVec4d HybridAStar::GetSearchedTree()
         {
             for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k)
             {
-                // printf("GetSearchedTree 0\n");
+                printf("GetSearchedTree 0 problem here \n");
                 // printf(" %d %d %d : %d %d %d \n", i, j, k, STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, STATE_GRID_SIZE_PHI_);
                 if (state_node_map_[i][j][k] == nullptr || state_node_map_[i][j][k]->parent_node_ == nullptr)
                 {

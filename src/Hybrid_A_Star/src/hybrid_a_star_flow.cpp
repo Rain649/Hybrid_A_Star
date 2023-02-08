@@ -68,21 +68,22 @@ void HybridAStarFlow::Run()
         costmap_deque_.pop_front();
 
         const double map_resolution = 0.2;
-        kinodynamic_astar_searcher_ptr_->Init(
-            current_costmap_ptr_->info.origin.position.x,
-            1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution,
-            current_costmap_ptr_->info.origin.position.y,
-            1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution,
-            current_costmap_ptr_->info.resolution,
-            map_resolution);
 
         // kinodynamic_astar_searcher_ptr_->Init(
         //     current_costmap_ptr_->info.origin.position.x,
-        //     1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.x,
+        //     1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution,
         //     current_costmap_ptr_->info.origin.position.y,
-        //     1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.y,
-        //     current_costmap_ptr_->info.resolution,
+        //     1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution,
+        //     static_cast<double>(current_costmap_ptr_->info.resolution),
         //     map_resolution);
+
+        kinodynamic_astar_searcher_ptr_->Init(
+            current_costmap_ptr_->info.origin.position.x,
+            1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.x,
+            current_costmap_ptr_->info.origin.position.y,
+            1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.y,
+            current_costmap_ptr_->info.resolution,
+            map_resolution);
 
         ROS_ERROR("6");
         unsigned int map_w = std::floor(current_costmap_ptr_->info.width / map_resolution);
@@ -131,7 +132,7 @@ void HybridAStarFlow::Run()
             ROS_ERROR("10-1");
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
-            ROS_ERROR("10-2 问题在这");
+            ROS_ERROR("10-2 problem here");
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
 
             ROS_ERROR("11");
