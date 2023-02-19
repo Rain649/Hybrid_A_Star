@@ -8,7 +8,8 @@
 
 #include <ros/ros.h>
 
-class HybridAStarFlow {
+class HybridAStarFlow
+{
 public:
     HybridAStarFlow() = default;
 
@@ -16,8 +17,11 @@ public:
 
     void Run();
 
+
+
 private:
-    void InitPoseData();
+    void
+    InitPoseData();
 
     void ReadData();
 
@@ -55,4 +59,4 @@ private:
     bool has_map_{};
 };
 
-#endif //HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H
+#endif // HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H

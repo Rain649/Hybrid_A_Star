@@ -11,8 +11,10 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl/filters/filter.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
+#include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <image_transport/image_transport.h>
@@ -41,7 +43,6 @@ public:
 private:
     void MessageCallBack(const nav_msgs::OccupancyGridPtr &costmap_msg_ptr);
     void LidarCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
-    void tfReceive();
 
     void OdomCallback(const nav_msgs::Odometry &msg);
     void TargetCallback(const nav_msgs::Odometry &msg);
@@ -59,13 +60,14 @@ private:
 
     // TF
     tf::TransformListener listener;
-    tf::StampedTransform transform_l2v;
+    tf::StampedTransform transform_v2l;
+    std::mutex mtx_listener;
 
     // vehicle
     VehState current_state;
 
     // local map
-    pcl::PointCloud<pcl::PointXYZI>::Ptr localVertexCloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr localVertexCloud;
 
     // msg
     nav_msgs::OccupancyGridPtr map_msg; // map
@@ -85,12 +87,12 @@ private:
 
     // lidar
     float Laser_Edge; // 雷达范围
-    pcl::PointCloud<pcl::PointXYZI>::Ptr LaserCloudSurround;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr LaserCloudSurroundFiltered;
-    pcl::PassThrough<pcl::PointXYZI> pass_x;
-    pcl::PassThrough<pcl::PointXYZI> pass_y;
-    pcl::PassThrough<pcl::PointXYZI> pass_z;
-    pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr LaserCloudSurround;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr LaserCloudSurroundFiltered;
+    pcl::PassThrough<pcl::PointXYZ> pass_x;
+    pcl::PassThrough<pcl::PointXYZ> pass_y;
+    pcl::PassThrough<pcl::PointXYZ> pass_z;
+    pcl::VoxelGrid<pcl::PointXYZ> downSizeFilter;
 };
 
 #endif //HYBRID_A_STAR_COSTMAP_SUBSCRIBER_H

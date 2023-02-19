@@ -32,7 +32,7 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
     double steering_penalty = nh.param("planner/steering_penalty", 1.05);
     double steering_change_penalty = nh.param("planner/steering_change_penalty", 1.5);
     double reversing_penalty = nh.param("planner/reversing_penalty", 2.0);
-    double shot_distance = nh.param("planner/shot_distance", 5.0);
+    double shot_distance = nh.param("planner/shot_distance", 3.0);
 
     kinodynamic_astar_searcher_ptr_ = std::make_shared<HybridAStar>(
         steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
@@ -213,7 +213,7 @@ void HybridAStarFlow::PublishPath(const VectorVec3d &path)
     geometry_msgs::PoseStamped pose_stamped;
     for (const auto &pose : path)
     {
-        pose_stamped.header.frame_id = "vehicle_base_link";
+        pose_stamped.header.frame_id = "sg_map";
         pose_stamped.pose.position.x = pose.x();
         pose_stamped.pose.position.y = pose.y();
         pose_stamped.pose.position.z = 0.0;
@@ -222,7 +222,7 @@ void HybridAStarFlow::PublishPath(const VectorVec3d &path)
         nav_path.poses.emplace_back(pose_stamped);
     }
 
-    nav_path.header.frame_id = "vehicle_base_link";
+    nav_path.header.frame_id = "sg_map";
     nav_path.header.stamp = timestamp_;
 
     path_pub_.publish(nav_path);
@@ -242,7 +242,7 @@ void HybridAStarFlow::PublishVehiclePath(const VectorVec3d &path, double width,
             vehicle.action = 3;
         }
 
-        vehicle.header.frame_id = "vehicle_base_link";
+        vehicle.header.frame_id = "sg_map";
         vehicle.header.stamp = ros::Time::now();
         vehicle.type = visualization_msgs::Marker::CUBE;
         vehicle.id = static_cast<int>(i / vehicle_interval);
@@ -269,7 +269,7 @@ void HybridAStarFlow::PublishVehiclePath(const VectorVec3d &path, double width,
 void HybridAStarFlow::PublishSearchedTree(const VectorVec4d &searched_tree)
 {
     visualization_msgs::Marker tree_list;
-    tree_list.header.frame_id = "vehicle_base_link";
+    tree_list.header.frame_id = "sg_map";
     tree_list.header.stamp = ros::Time::now();
     tree_list.type = visualization_msgs::Marker::LINE_LIST;
     tree_list.action = visualization_msgs::Marker::ADD;
@@ -302,3 +302,4 @@ void HybridAStarFlow::PublishSearchedTree(const VectorVec4d &searched_tree)
 
     searched_tree_pub_.publish(tree_list);
 }
+

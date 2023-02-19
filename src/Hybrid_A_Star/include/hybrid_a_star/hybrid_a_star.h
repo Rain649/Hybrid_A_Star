@@ -8,6 +8,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 
 class HybridAStar {
 public:
@@ -111,9 +112,10 @@ private:
     StateNode::Ptr terminal_node_ptr_ = nullptr;
     StateNode::Ptr ***state_node_map_ = nullptr;
 
-    std::multimap<double, StateNode::Ptr> openset_;
+    // std::multimap<double, StateNode::Ptr> *openset_;
+    std::shared_ptr<std::multimap<double, StateNode::Ptr>> openset_;
 
-    double wheel_base_; //The distance between the front and rear axles
+    double wheel_base_; // The distance between the front and rear axles
     double segment_length_;
     double move_step_size_;
     double steering_radian_step_size_;

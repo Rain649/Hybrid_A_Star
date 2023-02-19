@@ -1,5 +1,7 @@
 #include "hybrid_a_star/costmap_subscriber.h"
 
+float detection_distance = 20.f;
+
 CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size)
 {
 
@@ -20,13 +22,13 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     // map
     map_rows = map_cols = 200;
     map_res = 0.2;
-    map_o_x = map_o_y = -map_rows * map_res / 2; // 在车辆坐标系下的地图原点坐标
-    // map_o_x = map_o_y = 0;
+    // map_o_x = map_o_y = -map_rows * map_res / 2; // 在车辆坐标系下的地图原点坐标
+    map_o_x = map_o_y = 0;
     image_map.create(map_rows, map_cols, CV_8UC1);
 
-    MapPub = nh.advertise<nav_msgs::OccupancyGrid>("/map_local", 1);
+    MapPub = nh.advertise<nav_msgs::OccupancyGrid>("/cost_map", 1);
     map_msg.reset(new nav_msgs::OccupancyGrid());
-    nh.param<std::string>("frame_id", map_msg->header.frame_id, "vehicle_base_link");
+    nh.param<std::string>("frame_id", map_msg->header.frame_id, "sg_map");
     map_msg->info.resolution = map_res;
     map_msg->info.width = map_cols;
     map_msg->info.height = map_rows;
@@ -37,19 +39,20 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     subscriber_ = nh.subscribe(topic_name, buff_size, &CostMapSubscriber::LidarCallback, this);
 
     // lidar
-    Laser_Edge = abs(map_o_x);
+    Laser_Edge = abs(20.0);
 
     pass_z.setFilterFieldName("z");                        // 设置过滤时所需要点云类型的Z字段
     pass_z.setFilterLimits(-10, 1);                        // 设置在过滤字段的范围
-    // pass_x.setFilterFieldName("x");                        // 设置过滤时所需要点云类型的Z字段
-    // pass_x.setFilterLimits(-Laser_Edge, Laser_Edge);       // 设置在过滤字段的范围
-    // pass_y.setFilterFieldName("y");                        // 设置过滤时所需要点云类型的Z字段
-    // pass_y.setFilterLimits(-Laser_Edge, Laser_Edge);       // 设置在过滤字段的范围
+    pass_x.setFilterFieldName("x");                        // 设置过滤时所需要点云类型的Z字段
+    pass_x.setFilterLimits(0, 2 * Laser_Edge);             // 设置在过滤字段的范围
+    pass_y.setFilterFieldName("y");                        // 设置过滤时所需要点云类型的Z字段
+    pass_y.setFilterLimits(0, 2 * Laser_Edge);             // 设置在过滤字段的范围
     downSizeFilter.setLeafSize(map_res, map_res, map_res); // 分辨率
 
-    localVertexCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    LaserCloudSurround.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    LaserCloudSurroundFiltered.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    localVertexCloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    localVertexCloud->header.frame_id = "localMap";
+    LaserCloudSurround.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    LaserCloudSurroundFiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
     start_state_veh[0] = 0;
     start_state_veh[1] = 0;
@@ -76,35 +79,6 @@ void CostMapSubscriber::ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_
     buff_mutex_.unlock();
 }
 
-void CostMapSubscriber::tfReceive()
-{
-    while (ros::ok())
-    {
-        if (odom_flag)
-        {
-            try
-            {
-                listener.lookupTransform("vehicle_base_link", "localMap",
-                                         ros::Time(0), transform_l2v);
-                tf_flag = true;
-            }
-            catch (tf::TransformException &ex)
-            {
-                // ROS_ERROR("Error: %s", ex.what());
-                tf_flag = false;
-                continue;
-            }
-        }
-        else
-        {
-            tf_flag = false;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
-    printf("TF Receive Exit.\n");
-    return;
-}
 void CostMapSubscriber::OdomCallback(const nav_msgs::Odometry &msg)
 {
     current_state.x = msg.pose.pose.position.x;
@@ -130,24 +104,60 @@ void CostMapSubscriber::TargetCallback(const nav_msgs::Odometry &msg)
 }
 
 void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
-{        
-    buff_mutex_.lock();
+{
     LaserCloudSurround->clear();
-    pcl::fromROSMsg(*msg, *LaserCloudSurround);
 
-    // 融合局部地图,坐标系转换：局部地图坐标系to车辆坐标系
-    pcl::PointCloud<pcl::PointXYZI> pc_trans;
+    pcl::PointCloud<pcl::PointXYZ> temp_cloud;
 
-    if (tf_flag)
-        pcl_ros::transformPointCloud(*localVertexCloud, pc_trans, transform_l2v);
-    *LaserCloudSurround = pc_trans + *LaserCloudSurround;
+    pcl::fromROSMsg(*msg, temp_cloud);
+    temp_cloud.header.frame_id = "vehicle_base_link";
+
+    // 融合局部地图,坐标系转换：车辆坐标系to局部地图坐标系
+    pcl::PointCloud<pcl::PointXYZ> pc_trans;
+    // pc_trans.header.frame_id = "localMap";
+
+    ROS_INFO("tf_flag true!");
+    if (listener.canTransform("/localMap", "vehicle_base_link", ros::Time(0)), "sorry")
+    {
+        // listener.waitForTransform("vehicle_base_link", "/localMap", ros::Time(0), ros::Duration(1));
+        listener.lookupTransform("/localMap", "vehicle_base_link", ros::Time(0), transform_v2l);
+
+        // tf::Vector3 v3 = transform_v2l.getOrigin();
+        // printf("x: %f \n", v3.getX());
+        // printf("x: %f \n", v3.getY());
+        // printf("x: %f \n", v3.getZ());
+        // transform_v2l.getRotation();
+
+        geometry_msgs::PointStamped ip;
+        geometry_msgs::PointStamped op;
+        ip.header.frame_id = temp_cloud.header.frame_id;
+        for (auto i : temp_cloud)
+        {
+            ip.point.x = i.x;
+            ip.point.y = i.y;
+            ip.point.z = i.z;
+            listener.transformPoint("/localMap", ip, op);
+
+            LaserCloudSurround->push_back({op.point.x, op.point.y, op.point.z});
+        }
+    }
+    *LaserCloudSurround += *localVertexCloud;
+
+    for (auto &i : *LaserCloudSurround)
+    {
+        i.x += detection_distance;
+        i.y += detection_distance;
+    }
+    LaserCloudSurround->header.frame_id = "sg_map";
+
+    // ROS_INFO("LaserCloudSurround.size() = %zu", LaserCloudSurround->size());
 
     pass_z.setInputCloud(LaserCloudSurround);         // 设置输入点云
     pass_z.filter(*LaserCloudSurroundFiltered);       // 执行滤波
-    // pass_x.setInputCloud(LaserCloudSurroundFiltered); // 设置输入点云
-    // pass_x.filter(*LaserCloudSurround);               // 执行滤波
-    // pass_y.setInputCloud(LaserCloudSurround);         // 设置输入点云
-    // pass_y.filter(*LaserCloudSurroundFiltered);       // 执行滤波
+    pass_x.setInputCloud(LaserCloudSurroundFiltered); // 设置输入点云
+    pass_x.filter(*LaserCloudSurround);               // 执行滤波
+    pass_y.setInputCloud(LaserCloudSurround);         // 设置输入点云
+    pass_y.filter(*LaserCloudSurroundFiltered);       // 执行滤波
 
     downSizeFilter.setInputCloud(LaserCloudSurroundFiltered);
     downSizeFilter.filter(*LaserCloudSurround);
@@ -160,7 +170,7 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
     }
     for (size_t i = 0; i < LaserCloudSurround->points.size(); ++i)
     {
-        pcl::PointXYZI pointSub = LaserCloudSurround->points[i];
+        pcl::PointXYZ pointSub = LaserCloudSurround->points[i];
 
         index_row = map_rows - 1 - floor((pointSub.y - map_o_y) / map_res);
         index_col = floor((pointSub.x - map_o_x) / map_res);
@@ -187,7 +197,5 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
     map_msg->header.stamp = ros::Time::now();
     MapPub.publish(*map_msg);
     deque_costmap_.emplace_back(map_msg);
-
-    buff_mutex_.unlock();
 
 }

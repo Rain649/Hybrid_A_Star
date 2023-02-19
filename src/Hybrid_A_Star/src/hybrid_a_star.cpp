@@ -31,6 +31,7 @@ HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num,
 
     STATE_GRID_SIZE_PHI_ = grid_size_phi;
     ANGULAR_RESOLUTION_ = 360.0 / STATE_GRID_SIZE_PHI_ * M_PI / 180.0;
+    openset_ = std::make_shared<std::multimap<double, StateNode::Ptr>>();
 }
 
 HybridAStar::~HybridAStar()
@@ -558,8 +559,8 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
     state_node_map_[start_grid_index.x()][start_grid_index.y()][start_grid_index.z()] = start_node_ptr;
     state_node_map_[goal_grid_index.x()][goal_grid_index.y()][goal_grid_index.z()] = goal_node_ptr;
 
-    openset_.clear();
-    openset_.insert(std::make_pair(0, start_node_ptr));
+    openset_->clear();
+    openset_->emplace(0, start_node_ptr);
 
     std::vector<StateNode::Ptr> neighbor_nodes_ptr;
     StateNode::Ptr current_node_ptr;
@@ -567,15 +568,17 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
 
     ROS_ERROR("Search 1");
     int count = 0;
-    while (!openset_.empty())
+    while (!openset_->empty())
     {
-        current_node_ptr = openset_.begin()->second;
+        ROS_ERROR("Search 1-1");
+        current_node_ptr = openset_->begin()->second;
         current_node_ptr->node_status_ = StateNode::IN_CLOSESET;
-        openset_.erase(openset_.begin());
+        openset_->erase(openset_->begin());
         ROS_ERROR("Search 2");
 
         if ((current_node_ptr->state_.head(2) - goal_node_ptr->state_.head(2)).norm() <= shot_distance_)
         {
+            ROS_ERROR("Search 2-1");
             double rs_length = 0.0;
             if (AnalyticExpansions(current_node_ptr, goal_node_ptr, rs_length))
             {
@@ -609,36 +612,54 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
         Timer timer_get_neighbor;
         GetNeighborNodes(current_node_ptr, neighbor_nodes_ptr);
         neighbor_time = neighbor_time + timer_get_neighbor.End();
-
+        ROS_ERROR("Search 5");
+        ROS_ERROR("neighbor_nodes_ptr num: %zu", neighbor_nodes_ptr.size());
         for (unsigned int i = 0; i < neighbor_nodes_ptr.size(); ++i)
         {
+            ROS_ERROR("Search 5-1");
             neighbor_node_ptr = neighbor_nodes_ptr[i];
 
             Timer timer_compute_g;
             const double neighbor_edge_cost = ComputeG(current_node_ptr, neighbor_node_ptr);
             compute_g_time = compute_g_time + timer_get_neighbor.End();
 
+            ROS_ERROR("Search 5-2");
             Timer timer_compute_h;
             const double current_h = ComputeH(current_node_ptr, goal_node_ptr) * tie_breaker_;
             compute_h_time = compute_h_time + timer_compute_h.End();
 
+            ROS_ERROR("Search 5-3");
             const Vec3i &index = neighbor_node_ptr->grid_index_;
             if (state_node_map_[index.x()][index.y()][index.z()] == nullptr)
             {
+                ROS_ERROR("Search 5-4");
                 neighbor_node_ptr->g_cost_ = current_node_ptr->g_cost_ + neighbor_edge_cost;
                 neighbor_node_ptr->parent_node_ = current_node_ptr;
                 neighbor_node_ptr->node_status_ = StateNode::IN_OPENSET;
                 neighbor_node_ptr->f_cost_ = neighbor_node_ptr->g_cost_ + current_h;
-                openset_.insert(std::make_pair(neighbor_node_ptr->f_cost_, neighbor_node_ptr));
+                ROS_ERROR("%zu", openset_->size());
+
+                ROS_ERROR("Search 5-4-2 problem here");
+                // mtx_openset.lock();
+                // openset_->insert(temp_pair);
+                openset_->emplace(neighbor_node_ptr->f_cost_, neighbor_node_ptr);
+                // mtx_openset.unlock();
+
+                // openset_->insert(std::make_pair(neighbor_node_ptr->f_cost_, neighbor_node_ptr));
+
+                ROS_ERROR("Search 5-4-1");
                 state_node_map_[index.x()][index.y()][index.z()] = neighbor_node_ptr;
+                ROS_ERROR("Search 5-5");
                 continue;
             }
             else if (state_node_map_[index.x()][index.y()][index.z()]->node_status_ == StateNode::IN_OPENSET)
             {
+                ROS_ERROR("Search 5-6");
                 double g_cost_temp = current_node_ptr->g_cost_ + neighbor_edge_cost;
 
                 if (state_node_map_[index.x()][index.y()][index.z()]->g_cost_ > g_cost_temp)
                 {
+                    ROS_ERROR("Search 5-7");
                     neighbor_node_ptr->g_cost_ = g_cost_temp;
                     neighbor_node_ptr->f_cost_ = g_cost_temp + current_h;
                     neighbor_node_ptr->parent_node_ = current_node_ptr;
@@ -646,6 +667,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
 
                     delete state_node_map_[index.x()][index.y()][index.z()];
                     state_node_map_[index.x()][index.y()][index.z()] = neighbor_node_ptr;
+                    ROS_ERROR("Search 5-8");
                 }
                 else
                 {
@@ -659,15 +681,15 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
                 continue;
             }
         }
-
+        ROS_ERROR("Search 6");
         ++count;
         if (count > 50000)
         {
-            ROS_WARN("Exceeded the number of iterations, the search failed");
+            ROS_ERROR("Exceeded the number of iterations, the search failed");
             return false;
         }
     }
-
+    ROS_ERROR("Search 7");
     return false;
 }
 
@@ -797,19 +819,28 @@ void HybridAStar::Reset()
         for (int i = 0; i < STATE_GRID_SIZE_X_; ++i)
         {
             if (state_node_map_[i] == nullptr)
+            {
+                ROS_ERROR("Reset 1");
                 continue;
+            }
 
             for (int j = 0; j < STATE_GRID_SIZE_Y_; ++j)
             {
                 if (state_node_map_[i][j] == nullptr)
+                {
+                    ROS_ERROR("Reset 2");
                     continue;
+                }
 
                 for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k)
                 {
                     if (state_node_map_[i][j][k] != nullptr)
                     {
+                        ROS_ERROR("Reset 3");
                         delete state_node_map_[i][j][k];
+                        ROS_ERROR("Reset 4");
                         state_node_map_[i][j][k] = nullptr;
+                        ROS_ERROR("Reset 5");
                     }
                 }
             }

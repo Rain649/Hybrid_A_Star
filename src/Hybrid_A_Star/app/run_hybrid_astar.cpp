@@ -4,11 +4,13 @@
 
 #include <ros/ros.h>
 
-namespace backward {
-backward::SignalHandling sh;
+namespace backward
+{
+    backward::SignalHandling sh;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     ros::init(argc, argv, "run_hybrid_astar");
     ros::NodeHandle node_handle("~");
 
@@ -16,7 +18,8 @@ int main(int argc, char **argv) {
 
     ros::Rate rate(10);
 
-    while (ros::ok()) {
+    while (ros::ok())
+    {
         kinodynamic_astar_flow.Run();
 
         ros::spinOnce();
