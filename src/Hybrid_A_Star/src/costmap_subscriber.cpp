@@ -1,6 +1,6 @@
 #include "hybrid_a_star/costmap_subscriber.h"
 
-float detection_distance = 20.f;
+float detection_distance = 25.f;
 
 CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size)
 {
@@ -20,8 +20,8 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     // image_map.create(map_rows, map_cols, CV_8UC1);
 
     // map
-    map_rows = map_cols = 200;
-    map_res = 0.2;
+    map_rows = map_cols = 50;
+    map_res = 1;
     // map_o_x = map_o_y = -map_rows * map_res / 2; // 在车辆坐标系下的地图原点坐标
     map_o_x = map_o_y = 0;
     image_map.create(map_rows, map_cols, CV_8UC1);
@@ -39,7 +39,7 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     subscriber_ = nh.subscribe(topic_name, buff_size, &CostMapSubscriber::LidarCallback, this);
 
     // lidar
-    Laser_Edge = abs(20.0);
+    Laser_Edge = abs(detection_distance);
 
     pass_z.setFilterFieldName("z");                        // 设置过滤时所需要点云类型的Z字段
     pass_z.setFilterLimits(-10, 1);                        // 设置在过滤字段的范围

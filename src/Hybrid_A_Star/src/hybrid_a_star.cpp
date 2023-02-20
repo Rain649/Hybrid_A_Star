@@ -394,34 +394,34 @@ void HybridAStar::GetNeighborNodes(const StateNode::Ptr &curr_node_ptr,
             neighbor_nodes.push_back(neighbor_forward_node_ptr);
         }
 
-        // backward
-        has_obstacle = false;
-        intermediate_state.clear();
-        x = curr_node_ptr->state_.x();
-        y = curr_node_ptr->state_.y();
-        theta = curr_node_ptr->state_.z();
-        for (int j = 1; j <= segment_length_discrete_num_; j++)
-        {
-            DynamicModel(-move_step_size_, phi, x, y, theta);
-            intermediate_state.emplace_back(Vec3d(x, y, theta));
+        // // backward
+        // has_obstacle = false;
+        // intermediate_state.clear();
+        // x = curr_node_ptr->state_.x();
+        // y = curr_node_ptr->state_.y();
+        // theta = curr_node_ptr->state_.z();
+        // for (int j = 1; j <= segment_length_discrete_num_; j++)
+        // {
+        //     DynamicModel(-move_step_size_, phi, x, y, theta);
+        //     intermediate_state.emplace_back(Vec3d(x, y, theta));
 
-            if (!CheckCollision(x, y, theta))
-            {
-                has_obstacle = true;
-                break;
-            }
-        }
+        //     if (!CheckCollision(x, y, theta))
+        //     {
+        //         has_obstacle = true;
+        //         break;
+        //     }
+        // }
 
-        if (!BeyondBoundary(intermediate_state.back().head(2)) && !has_obstacle)
-        {
-            grid_index = State2Index(intermediate_state.back());
-            auto neighbor_backward_node_ptr = new StateNode(grid_index);
-            neighbor_backward_node_ptr->intermediate_states_ = intermediate_state;
-            neighbor_backward_node_ptr->state_ = intermediate_state.back();
-            neighbor_backward_node_ptr->steering_grade_ = i;
-            neighbor_backward_node_ptr->direction_ = StateNode::BACKWARD;
-            neighbor_nodes.push_back(neighbor_backward_node_ptr);
-        }
+        // if (!BeyondBoundary(intermediate_state.back().head(2)) && !has_obstacle)
+        // {
+        //     grid_index = State2Index(intermediate_state.back());
+        //     auto neighbor_backward_node_ptr = new StateNode(grid_index);
+        //     neighbor_backward_node_ptr->intermediate_states_ = intermediate_state;
+        //     neighbor_backward_node_ptr->state_ = intermediate_state.back();
+        //     neighbor_backward_node_ptr->steering_grade_ = i;
+        //     neighbor_backward_node_ptr->direction_ = StateNode::BACKWARD;
+        //     neighbor_nodes.push_back(neighbor_backward_node_ptr);
+        // }
     }
 }
 
