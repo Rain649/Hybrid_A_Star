@@ -114,9 +114,7 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
 
     // 融合局部地图,坐标系转换：车辆坐标系to局部地图坐标系
     pcl::PointCloud<pcl::PointXYZ> pc_trans;
-    // pc_trans.header.frame_id = "localMap";
 
-    ROS_INFO("tf_flag true!");
     if (listener.canTransform("/localMap", "vehicle_base_link", ros::Time(0)), "sorry")
     {
         // listener.waitForTransform("vehicle_base_link", "/localMap", ros::Time(0), ros::Duration(1));
