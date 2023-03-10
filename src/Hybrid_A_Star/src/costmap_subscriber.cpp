@@ -11,14 +11,6 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     lidar_flag = false;
     tf_flag = false;
 
-    // // map
-    // map_rows = 200;
-    // map_cols = 200;
-    // map_res = 0.2;
-    // map_o_x = -20; // 在车辆坐标系下的地图原点坐标
-    // map_o_y = -20;
-    // image_map.create(map_rows, map_cols, CV_8UC1);
-
     // map
     map_rows = map_cols = 50;
     map_res = 1;
