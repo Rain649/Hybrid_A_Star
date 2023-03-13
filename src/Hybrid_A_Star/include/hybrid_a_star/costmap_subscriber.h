@@ -24,7 +24,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <deque>
 #include <mutex>
 #include <thread>
 #include <string>
@@ -38,25 +37,21 @@ public:
 class CostMapSubscriber {
 public:
     CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size);
-    void ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr);
+    void ParseData(nav_msgs::OccupancyGridPtr &data, bool &flag);
 
 private:
     void MessageCallBack(const nav_msgs::OccupancyGridPtr &costmap_msg_ptr);
     void LidarCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
 
-    void OdomCallback(const nav_msgs::Odometry &msg);
-    void TargetCallback(const nav_msgs::Odometry &msg);
+    // void OdomCallback(const nav_msgs::Odometry &msg);
+    // void TargetCallback(const nav_msgs::Odometry &msg);
 
 private:
     ros::Subscriber subscriber_, OdomSub, TargetSub, LidarSub;
     ros::Publisher MapPub;
 
-    std::deque<nav_msgs::OccupancyGridPtr>
-        deque_costmap_;
-    std::mutex buff_mutex_;
-
     // callback flag
-    bool odom_flag, target_flag, lidar_flag, tf_flag;
+    bool odom_flag, target_flag, map_flag, tf_flag;
 
     // TF
     tf::TransformListener listener;
@@ -81,9 +76,9 @@ private:
     float map_res; // 分辨率
     int index_row, index_col;
 
-    // Dubins/Reeds-Shepp曲线
-    double start_state[3], start_state_veh[3];
-    double final_state[3], final_state_veh[3];
+    // // Dubins/Reeds-Shepp曲线
+    // double start_state[3], start_state_veh[3];
+    // double final_state[3], final_state_veh[3];
 
     // lidar
     float Laser_Edge; // 雷达范围

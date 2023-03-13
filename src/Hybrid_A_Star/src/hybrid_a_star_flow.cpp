@@ -46,7 +46,12 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
     searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("searched_tree", 1);
     vehicle_path_pub_ = nh.advertise<visualization_msgs::MarkerArray>("vehicle_path", 1);
 
+    has_goal_ = false;
+    has_start_ = false;
     has_map_ = false;
+    current_init_pose_ptr_ = boost::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
+    current_goal_pose_ptr_ = boost::make_shared<geometry_msgs::PoseStamped>();
+    current_costmap_ptr_ = boost::make_shared<nav_msgs::OccupancyGrid>();
 }
 
 void HybridAStarFlow::intersectionHandler(const std_msgs::Bool msg)
@@ -58,25 +63,13 @@ void HybridAStarFlow::Run()
 {
     ReadData();
 
-    if (!has_map_)
+    if (!intersectionVerified || !has_start_ || !has_goal_ || !has_map_)
     {
-        if (costmap_deque_.empty())
-        {
-            return;
-        }
-
-        current_costmap_ptr_ = costmap_deque_.front();
-        costmap_deque_.pop_front();
-
+        return;
+    }
+    else
+    {
         const double map_resolution = 0.2;
-
-        // kinodynamic_astar_searcher_ptr_->Init(
-        //     current_costmap_ptr_->info.origin.position.x,
-        //     1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution,
-        //     current_costmap_ptr_->info.origin.position.y,
-        //     1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution,
-        //     static_cast<double>(current_costmap_ptr_->info.resolution),
-        //     map_resolution);
 
         kinodynamic_astar_searcher_ptr_->Init(
             current_costmap_ptr_->info.origin.position.x,
@@ -101,12 +94,9 @@ void HybridAStarFlow::Run()
                 }
             }
         }
-        has_map_ = true;
-    }
-    costmap_deque_.clear();
-    while (intersectionVerified  && HasStartPose() && HasGoalPose())
-    {
-        InitPoseData();
+        has_start_ = false;
+        has_goal_ = false;
+        has_map_ = false;
 
         double start_yaw = tf::getYaw(current_init_pose_ptr_->pose.pose.orientation);
         double goal_yaw = tf::getYaw(current_goal_pose_ptr_->pose.orientation);
@@ -116,7 +106,7 @@ void HybridAStarFlow::Run()
             current_init_pose_ptr_->pose.pose.position.y,
             start_yaw);
 
-        ROS_ERROR("x = %f, y = %f", current_init_pose_ptr_->pose.pose.position.x, current_init_pose_ptr_->pose.pose.position.y);
+        // ROS_ERROR("x = %f, y = %f", current_init_pose_ptr_->pose.pose.position.x, current_init_pose_ptr_->pose.pose.position.y);
 
         Vec3d goal_state = Vec3d(
             current_goal_pose_ptr_->pose.position.x,
@@ -128,7 +118,7 @@ void HybridAStarFlow::Run()
             auto path = kinodynamic_astar_searcher_ptr_->GetPath();
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
-            ROS_ERROR("10-2 problem here");
+            // ROS_ERROR("10-2 problem here");
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
 
             // nav_msgs::Path path_ros;
@@ -178,28 +168,9 @@ void HybridAStarFlow::Run()
 
 void HybridAStarFlow::ReadData()
 {
-    costmap_sub_ptr_->ParseData(costmap_deque_);
-    init_pose_sub_ptr_->ParseData(init_pose_deque_);
-    goal_pose_sub_ptr_->ParseData(goal_pose_deque_);
-}
-
-void HybridAStarFlow::InitPoseData()
-{
-    current_init_pose_ptr_ = init_pose_deque_.front();
-    init_pose_deque_.pop_front();
-
-    current_goal_pose_ptr_ = goal_pose_deque_.front();
-    goal_pose_deque_.pop_front();
-}
-
-bool HybridAStarFlow::HasGoalPose()
-{
-    return !goal_pose_deque_.empty();
-}
-
-bool HybridAStarFlow::HasStartPose()
-{
-    return !init_pose_deque_.empty();
+    init_pose_sub_ptr_->ParseData(current_init_pose_ptr_, has_start_);
+    goal_pose_sub_ptr_->ParseData(current_goal_pose_ptr_, has_goal_);
+    costmap_sub_ptr_->ParseData(current_costmap_ptr_, has_map_);
 }
 
 void HybridAStarFlow::PublishPath(const VectorVec3d &path)

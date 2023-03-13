@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
     HybridAStarFlow kinodynamic_astar_flow(node_handle);
 
-    ros::Rate rate(10);
+    ros::Rate rate(20);
 
     while (ros::ok())
     {
@@ -24,6 +24,7 @@ int main(int argc, char **argv)
 
         ros::spinOnce();
         rate.sleep();
+        ROS_ERROR("SPIN");
     }
 
     ros::shutdown();

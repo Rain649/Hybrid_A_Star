@@ -19,13 +19,8 @@ public:
     void Run();
 
 private:
-    void InitPoseData();
 
     void ReadData();
-
-    bool HasStartPose();
-
-    bool HasGoalPose();
 
     void intersectionHandler(const std_msgs::Bool msg);
 
@@ -47,17 +42,13 @@ private:
     ros::Publisher searched_tree_pub_;
     ros::Publisher vehicle_path_pub_;
 
-    std::deque<geometry_msgs::PoseWithCovarianceStampedPtr> init_pose_deque_;
-    std::deque<geometry_msgs::PoseStampedPtr> goal_pose_deque_;
-    std::deque<nav_msgs::OccupancyGridPtr> costmap_deque_;
-
     geometry_msgs::PoseWithCovarianceStampedPtr current_init_pose_ptr_;
     geometry_msgs::PoseStampedPtr current_goal_pose_ptr_;
     nav_msgs::OccupancyGridPtr current_costmap_ptr_;
 
     ros::Time timestamp_;
 
-    bool has_map_{}, intersectionVerified{};
+    bool has_map_, has_goal_, has_start_, intersectionVerified;
 };
 
 #endif // HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H

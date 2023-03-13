@@ -58,8 +58,8 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
     MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_) / MAP_GRID_RESOLUTION_);
     MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) / MAP_GRID_RESOLUTION_);
 
-    ROS_INFO("x_lower: %f,x_upper: %f,y_lower: %f ,y_upper: %f ,state_grid_resolution: %f ,map_grid_resolution: %f ", x_lower, x_upper, y_lower, y_upper, state_grid_resolution, map_grid_resolution);
-    ROS_INFO("STATE_GRID_SIZE_X_: %d,STATE_GRID_SIZE_Y_: %d,MAP_GRID_SIZE_X_: %d ,MAP_GRID_SIZE_Y_: %d ", STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, MAP_GRID_SIZE_X_, MAP_GRID_SIZE_Y_);
+    // ROS_INFO("x_lower: %f,x_upper: %f,y_lower: %f ,y_upper: %f ,state_grid_resolution: %f ,map_grid_resolution: %f ", x_lower, x_upper, y_lower, y_upper, state_grid_resolution, map_grid_resolution);
+    // ROS_INFO("STATE_GRID_SIZE_X_: %d,STATE_GRID_SIZE_Y_: %d,MAP_GRID_SIZE_X_: %d ,MAP_GRID_SIZE_Y_: %d ", STATE_GRID_SIZE_X_, STATE_GRID_SIZE_Y_, MAP_GRID_SIZE_X_, MAP_GRID_SIZE_Y_);
     // pause();
 
     if (map_data_)
@@ -607,7 +607,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
         Timer timer_get_neighbor;
         GetNeighborNodes(current_node_ptr, neighbor_nodes_ptr);
         neighbor_time = neighbor_time + timer_get_neighbor.End();
-        ROS_ERROR("neighbor_nodes_ptr num: %zu", neighbor_nodes_ptr.size());
+        // ROS_ERROR("neighbor_nodes_ptr num: %zu", neighbor_nodes_ptr.size());
         for (unsigned int i = 0; i < neighbor_nodes_ptr.size(); ++i)
         {
             neighbor_node_ptr = neighbor_nodes_ptr[i];
@@ -629,7 +629,7 @@ bool HybridAStar::Search(const Vec3d &start_state, const Vec3d &goal_state)
                 neighbor_node_ptr->f_cost_ = neighbor_node_ptr->g_cost_ + current_h;
                 // ROS_ERROR("%zu", openset_->size());
 
-                ROS_ERROR("Search 5-4-2 problem here");
+                // ROS_ERROR("Search 5-4-2 problem here");
                 openset_->emplace(neighbor_node_ptr->f_cost_, neighbor_node_ptr);
 
                 state_node_map_[index.x()][index.y()][index.z()] = neighbor_node_ptr;

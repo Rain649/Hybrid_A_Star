@@ -6,31 +6,23 @@ GoalPoseSubscriber2D::GoalPoseSubscriber2D(ros::NodeHandle &nh, const std::strin
 {
     subscriber_ = nh.subscribe(
         topic_name, buff_size, &GoalPoseSubscriber2D::MessageCallBack, this);
+    goal_pose = boost::make_shared<geometry_msgs::PoseStamped>();
 }
 
-// void GoalPoseSubscriber2D::MessageCallBack(const geometry_msgs::PoseStampedPtr &goal_pose_) {
-//     // goal_pose_.pose
-//     buff_mutex_.lock();
-//     goal_poses_.emplace_back(goal_pose_);
-//     buff_mutex_.unlock();
-// }
-
-void GoalPoseSubscriber2D::ParseData(std::deque<geometry_msgs::PoseStampedPtr> &pose_data_buff)
+void GoalPoseSubscriber2D::ParseData(geometry_msgs::PoseStampedPtr &data, bool &flag)
 {
-    buff_mutex_.lock();
-    if (!goal_poses_.empty())
+    *data = *goal_pose;
+    flag = goal_flag;
+    if (flag == true)
     {
-        pose_data_buff.insert(pose_data_buff.end(), goal_poses_.begin(), goal_poses_.end());
-        goal_poses_.clear();
+        goal_flag = false;
     }
-    buff_mutex_.unlock();
 }
 
 void GoalPoseSubscriber2D::MessageCallBack(const geometry_msgs::PoseStampedPtr &msg)
 {
-    msg->pose.position.x += detection_distance;
-    msg->pose.position.y += detection_distance;
-    buff_mutex_.lock();
-    goal_poses_.emplace_back(msg);
-    buff_mutex_.unlock();
+    goal_pose = msg;
+    goal_pose->pose.position.x += detection_distance;
+    goal_pose->pose.position.y += detection_distance;
+    goal_flag = true;
 }

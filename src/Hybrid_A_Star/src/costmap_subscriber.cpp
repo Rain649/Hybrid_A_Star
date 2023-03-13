@@ -4,12 +4,11 @@ float detection_distance = 25.f;
 
 CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size)
 {
-
     // callback flag
     odom_flag = false;
     target_flag = false;
-    lidar_flag = false;
     tf_flag = false;
+    map_flag = false;
 
     // map
     map_rows = map_cols = 50;
@@ -46,53 +45,19 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     LaserCloudSurround.reset(new pcl::PointCloud<pcl::PointXYZ>());
     LaserCloudSurroundFiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
-    start_state_veh[0] = 0;
-    start_state_veh[1] = 0;
-    start_state_veh[2] = 0;
+    // start_state_veh[0] = 0;
+    // start_state_veh[1] = 0;
+    // start_state_veh[2] = 0;
 }
 
-void CostMapSubscriber::MessageCallBack(const nav_msgs::OccupancyGridPtr &costmap_msg_ptr)
+void CostMapSubscriber::ParseData(nav_msgs::OccupancyGridPtr &data, bool &flag)
 {
-    buff_mutex_.lock();
-    deque_costmap_.emplace_back(costmap_msg_ptr);
-    buff_mutex_.unlock();
-}
-
-void CostMapSubscriber::ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr)
-{
-    buff_mutex_.lock();
-    if (!deque_costmap_.empty())
+    *data = *map_msg;
+    flag = map_flag;
+    if(flag == true)
     {
-        deque_costmap_msg_ptr.insert(deque_costmap_msg_ptr.end(),
-                                     deque_costmap_.begin(),
-                                     deque_costmap_.end());
-        deque_costmap_.clear();
+        map_flag = false;
     }
-    buff_mutex_.unlock();
-}
-
-void CostMapSubscriber::OdomCallback(const nav_msgs::Odometry &msg)
-{
-    current_state.x = msg.pose.pose.position.x;
-    current_state.y = msg.pose.pose.position.y;
-    current_state.u = msg.twist.twist.linear.x;
-    current_state.w = msg.twist.twist.angular.z;
-    current_state.yaw = tf::getYaw(msg.pose.pose.orientation);
-
-    start_state[0] = msg.pose.pose.position.x;
-    start_state[1] = msg.pose.pose.position.y;
-    start_state[2] = tf::getYaw(msg.pose.pose.orientation);
-
-    odom_flag = true;
-}
-
-void CostMapSubscriber::TargetCallback(const nav_msgs::Odometry &msg)
-{
-    final_state[0] = msg.pose.pose.position.x;
-    final_state[1] = msg.pose.pose.position.y;
-    final_state[2] = tf::getYaw(msg.pose.pose.orientation);
-
-    target_flag = true;
 }
 
 void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -112,12 +77,6 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
         // listener.waitForTransform("vehicle_base_link", "/localMap", ros::Time(0), ros::Duration(1));
         listener.lookupTransform("/localMap", "vehicle_base_link", ros::Time(0), transform_v2l);
 
-        // tf::Vector3 v3 = transform_v2l.getOrigin();
-        // printf("x: %f \n", v3.getX());
-        // printf("x: %f \n", v3.getY());
-        // printf("x: %f \n", v3.getZ());
-        // transform_v2l.getRotation();
-
         geometry_msgs::PointStamped ip;
         geometry_msgs::PointStamped op;
         ip.header.frame_id = temp_cloud.header.frame_id;
@@ -128,7 +87,7 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
             ip.point.z = i.z;
             listener.transformPoint("/localMap", ip, op);
 
-            LaserCloudSurround->push_back({static_cast<float>(op.point.x),static_cast<float>(op.point.y),static_cast<float>(op.point.z)});
+            LaserCloudSurround->push_back({static_cast<float>(op.point.x), static_cast<float>(op.point.y), static_cast<float>(op.point.z)});
         }
     }
     *LaserCloudSurround += *localVertexCloud;
@@ -186,6 +145,5 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
     map_msg->data = map_vec;
     map_msg->header.stamp = ros::Time::now();
     MapPub.publish(*map_msg);
-    deque_costmap_.emplace_back(map_msg);
-
+    map_flag = true;
 }

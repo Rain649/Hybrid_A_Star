@@ -6,41 +6,26 @@ InitPoseSubscriber2D::InitPoseSubscriber2D(ros::NodeHandle &nh,
                                            const std::string &topic_name,
                                            size_t buff_size)
 {
-    subscriber_ = nh.subscribe(
-        topic_name, buff_size, &InitPoseSubscriber2D::MessageCallBack, this);
+    subscriber_ = nh.subscribe(topic_name, buff_size, &InitPoseSubscriber2D::MessageCallBack, this);
+    init_pose = boost::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
+    init_pose->header.frame_id = "sg_map";
 }
 
-// void InitPoseSubscriber2D::MessageCallBack(
-//     const geometry_msgs::PoseWithCovarianceStampedPtr &init_pose_ptr)
-// {
-//     buff_mutex_.lock();
-//     init_poses_.emplace_back(init_pose_ptr);
-//     buff_mutex_.unlock();
-// }
-
-void InitPoseSubscriber2D::ParseData(
-    std::deque<geometry_msgs::PoseWithCovarianceStampedPtr> &pose_data_buff)
+void InitPoseSubscriber2D::ParseData(geometry_msgs::PoseWithCovarianceStampedPtr &data, bool &flag)
 {
-    buff_mutex_.lock();
-    if (!init_poses_.empty())
+    *data = *init_pose;
+    flag = start_flag;
+    if (flag == true)
     {
-        pose_data_buff.insert(pose_data_buff.end(), init_poses_.begin(), init_poses_.end());
-        init_poses_.clear();
+        start_flag = false;
     }
-    buff_mutex_.unlock();
 }
 
 void InitPoseSubscriber2D::MessageCallBack(const nav_msgs::Odometry &msg)
 {
-    geometry_msgs::PoseWithCovarianceStamped init_pose;
-    init_pose.header.frame_id = "sg_map";
-    init_pose.header.stamp = msg.header.stamp;
-    init_pose.pose.pose = msg.pose.pose;
-    init_pose.pose.pose.position.x += detection_distance;
-    init_pose.pose.pose.position.y += detection_distance;
-    geometry_msgs::PoseWithCovarianceStampedPtr init_pose_ptr = boost::make_shared<geometry_msgs::PoseWithCovarianceStamped>(init_pose);
-
-    buff_mutex_.lock();
-    init_poses_.emplace_back(init_pose_ptr);
-    buff_mutex_.unlock();
+    init_pose->header.stamp = msg.header.stamp;
+    init_pose->pose.pose = msg.pose.pose;
+    init_pose->pose.pose.position.x += detection_distance;
+    init_pose->pose.pose.position.y += detection_distance;
+    start_flag = true;
 }
