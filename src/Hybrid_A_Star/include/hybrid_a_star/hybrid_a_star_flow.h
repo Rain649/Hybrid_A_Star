@@ -5,6 +5,7 @@
 #include "costmap_subscriber.h"
 #include "init_pose_subscriber.h"
 #include "goal_pose_subscriber.h"
+#include "std_msgs/Bool.h"
 
 #include <ros/ros.h>
 
@@ -17,17 +18,16 @@ public:
 
     void Run();
 
-
-
 private:
-    void
-    InitPoseData();
+    void InitPoseData();
 
     void ReadData();
 
     bool HasStartPose();
 
     bool HasGoalPose();
+
+    void intersectionHandler(const std_msgs::Bool msg);
 
     void PublishPath(const VectorVec3d &path);
 
@@ -41,6 +41,7 @@ private:
     std::shared_ptr<CostMapSubscriber> costmap_sub_ptr_;
     std::shared_ptr<InitPoseSubscriber2D> init_pose_sub_ptr_;
     std::shared_ptr<GoalPoseSubscriber2D> goal_pose_sub_ptr_;
+    ros::Subscriber subIntersection;
 
     ros::Publisher path_pub_;
     ros::Publisher searched_tree_pub_;
@@ -56,7 +57,7 @@ private:
 
     ros::Time timestamp_;
 
-    bool has_map_{};
+    bool has_map_{}, intersectionVerified{};
 };
 
 #endif // HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H

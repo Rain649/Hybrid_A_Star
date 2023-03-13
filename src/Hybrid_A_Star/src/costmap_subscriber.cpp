@@ -128,7 +128,7 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
             ip.point.z = i.z;
             listener.transformPoint("/localMap", ip, op);
 
-            LaserCloudSurround->push_back({op.point.x, op.point.y, op.point.z});
+            LaserCloudSurround->push_back({static_cast<float>(op.point.x),static_cast<float>(op.point.y),static_cast<float>(op.point.z)});
         }
     }
     *LaserCloudSurround += *localVertexCloud;

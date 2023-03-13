@@ -38,8 +38,9 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
         steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
         steering_penalty, reversing_penalty, steering_change_penalty, shot_distance);
     costmap_sub_ptr_ = std::make_shared<CostMapSubscriber>(nh, "/lidarCloudProcess/cloud_Combined", 1);
-    init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, "/initialpose", 1);
-    goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, "/move_base_simple/goal", 1);
+    init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, "/navigation/intersectionOdom", 1);
+    goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, "/navigation/targetPoint", 1);
+    subIntersection = nh.subscribe<std_msgs::Bool>("/intersectionDetection/intersectionVerified", 1, &HybridAStarFlow::intersectionHandler, this);
 
     path_pub_ = nh.advertise<nav_msgs::Path>("searched_path", 1);
     searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("searched_tree", 1);
@@ -48,22 +49,22 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
     has_map_ = false;
 }
 
+void HybridAStarFlow::intersectionHandler(const std_msgs::Bool msg)
+{
+    intersectionVerified = msg.data;
+}
+
 void HybridAStarFlow::Run()
 {
-    ROS_ERROR("1");
     ReadData();
-    ROS_ERROR("2");
 
     if (!has_map_)
     {
-        ROS_ERROR("3");
         if (costmap_deque_.empty())
         {
-            ROS_ERROR("4");
             return;
         }
 
-        ROS_ERROR("5");
         current_costmap_ptr_ = costmap_deque_.front();
         costmap_deque_.pop_front();
 
@@ -85,7 +86,6 @@ void HybridAStarFlow::Run()
             current_costmap_ptr_->info.resolution,
             map_resolution);
 
-        ROS_ERROR("6");
         unsigned int map_w = std::floor(current_costmap_ptr_->info.width / map_resolution);
         unsigned int map_h = std::floor(current_costmap_ptr_->info.height / map_resolution);
         for (unsigned int w = 0; w < map_w; ++w)
@@ -104,12 +104,9 @@ void HybridAStarFlow::Run()
         has_map_ = true;
     }
     costmap_deque_.clear();
-    ROS_ERROR("7");
-    bool findPath = false;
-    while (!findPath && HasStartPose() && HasGoalPose())
+    while (intersectionVerified  && HasStartPose() && HasGoalPose())
     {
         InitPoseData();
-        ROS_ERROR("8");
 
         double start_yaw = tf::getYaw(current_init_pose_ptr_->pose.pose.orientation);
         double goal_yaw = tf::getYaw(current_goal_pose_ptr_->pose.orientation);
@@ -118,24 +115,22 @@ void HybridAStarFlow::Run()
             current_init_pose_ptr_->pose.pose.position.x,
             current_init_pose_ptr_->pose.pose.position.y,
             start_yaw);
+
+        ROS_ERROR("x = %f, y = %f", current_init_pose_ptr_->pose.pose.position.x, current_init_pose_ptr_->pose.pose.position.y);
+
         Vec3d goal_state = Vec3d(
             current_goal_pose_ptr_->pose.position.x,
             current_goal_pose_ptr_->pose.position.y,
             goal_yaw);
-        ROS_ERROR("9");
 
         if (kinodynamic_astar_searcher_ptr_->Search(start_state, goal_state))
         {
-            findPath = true;
-            ROS_ERROR("10");
             auto path = kinodynamic_astar_searcher_ptr_->GetPath();
-            ROS_ERROR("10-1");
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
             ROS_ERROR("10-2 problem here");
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
 
-            ROS_ERROR("11");
             // nav_msgs::Path path_ros;
             // geometry_msgs::PoseStamped pose_stamped;
 
@@ -177,6 +172,7 @@ void HybridAStarFlow::Run()
         // debug
         //        std::cout << "visited nodes: " << kinodynamic_astar_searcher_ptr_->GetVisitedNodesNumber() << std::endl;
         kinodynamic_astar_searcher_ptr_->Reset();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
@@ -302,4 +298,3 @@ void HybridAStarFlow::PublishSearchedTree(const VectorVec4d &searched_tree)
 
     searched_tree_pub_.publish(tree_list);
 }
-
