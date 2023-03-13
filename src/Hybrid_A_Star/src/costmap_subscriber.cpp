@@ -1,6 +1,6 @@
 #include "hybrid_a_star/costmap_subscriber.h"
 
-float detection_distance = 25.f;
+extern float detection_distance;
 
 CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size)
 {
@@ -29,6 +29,12 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
 
     subscriber_ = nh.subscribe(topic_name, buff_size, &CostMapSubscriber::LidarCallback, this);
 
+    // 创建一个client，请求service
+    client = nh.serviceClient<hybrid_a_star::mineServer>("/service/node_ID_Manager");
+    // 创建service消息
+    addsrv.request.mode = 3;
+    // addsrv.request.nodeID_Index = atol(0);
+
     // lidar
     Laser_Edge = abs(detection_distance);
 
@@ -45,9 +51,6 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     LaserCloudSurround.reset(new pcl::PointCloud<pcl::PointXYZ>());
     LaserCloudSurroundFiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
-    // start_state_veh[0] = 0;
-    // start_state_veh[1] = 0;
-    // start_state_veh[2] = 0;
 }
 
 void CostMapSubscriber::ParseData(nav_msgs::OccupancyGridPtr &data, bool &flag)
@@ -72,10 +75,23 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
     // 融合局部地图,坐标系转换：车辆坐标系to局部地图坐标系
     pcl::PointCloud<pcl::PointXYZ> pc_trans;
 
-    if (listener.canTransform("/localMap", "vehicle_base_link", ros::Time(0)), "sorry")
+    try
+    {
+        listener.lookupTransform("/localMap", "vehicle_base_link",
+                                 ros::Time(0), transform_v2l);
+        tf_flag = true;
+    }
+    catch (tf::TransformException &ex)
+    {
+        ROS_ERROR("Error: %s", ex.what());
+        tf_flag = false;
+        return;
+    }
+
+    if (tf_flag)
     {
         // listener.waitForTransform("vehicle_base_link", "/localMap", ros::Time(0), ros::Duration(1));
-        listener.lookupTransform("/localMap", "vehicle_base_link", ros::Time(0), transform_v2l);
+        // listener.lookupTransform("/localMap", "vehicle_base_link", ros::Time(0), transform_v2l);
 
         geometry_msgs::PointStamped ip;
         geometry_msgs::PointStamped op;
@@ -90,6 +106,9 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
             LaserCloudSurround->push_back({static_cast<float>(op.point.x), static_cast<float>(op.point.y), static_cast<float>(op.point.z)});
         }
     }
+    client.call(addsrv);
+    sensor_msgs::PointCloud2 localCloud = addsrv.response.localCloud;
+    pcl::moveFromROSMsg(localCloud, *localVertexCloud);
     *LaserCloudSurround += *localVertexCloud;
 
     for (auto &i : *LaserCloudSurround)

@@ -27,6 +27,9 @@
 #include <mutex>
 #include <thread>
 #include <string>
+
+#include "hybrid_a_star/mineServer.h"
+
 class VehState
 {
 public:
@@ -88,6 +91,10 @@ private:
     pcl::PassThrough<pcl::PointXYZ> pass_y;
     pcl::PassThrough<pcl::PointXYZ> pass_z;
     pcl::VoxelGrid<pcl::PointXYZ> downSizeFilter;
+
+    //server
+    ros::ServiceClient client;
+    hybrid_a_star::mineServer addsrv;
 };
 
 #endif //HYBRID_A_STAR_COSTMAP_SUBSCRIBER_H

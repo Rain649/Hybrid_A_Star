@@ -6,6 +6,8 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 
+float detection_distance = 25.f;
+
 double Mod2Pi(const double &x)
 {
     double v = fmod(x, 2 * M_PI);
@@ -49,6 +51,7 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
     has_goal_ = false;
     has_start_ = false;
     has_map_ = false;
+
     current_init_pose_ptr_ = boost::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
     current_goal_pose_ptr_ = boost::make_shared<geometry_msgs::PoseStamped>();
     current_costmap_ptr_ = boost::make_shared<nav_msgs::OccupancyGrid>();
@@ -69,6 +72,7 @@ void HybridAStarFlow::Run()
     }
     else
     {
+        ROS_ERROR("Have enough flags to run");
         const double map_resolution = 0.2;
 
         kinodynamic_astar_searcher_ptr_->Init(
@@ -79,6 +83,7 @@ void HybridAStarFlow::Run()
             current_costmap_ptr_->info.resolution,
             map_resolution);
 
+        ROS_ERROR("11");
         unsigned int map_w = std::floor(current_costmap_ptr_->info.width / map_resolution);
         unsigned int map_h = std::floor(current_costmap_ptr_->info.height / map_resolution);
         for (unsigned int w = 0; w < map_w; ++w)
@@ -97,6 +102,7 @@ void HybridAStarFlow::Run()
         has_start_ = false;
         has_goal_ = false;
         has_map_ = false;
+        ROS_ERROR("22");
 
         double start_yaw = tf::getYaw(current_init_pose_ptr_->pose.pose.orientation);
         double goal_yaw = tf::getYaw(current_goal_pose_ptr_->pose.orientation);
@@ -106,62 +112,30 @@ void HybridAStarFlow::Run()
             current_init_pose_ptr_->pose.pose.position.y,
             start_yaw);
 
-        // ROS_ERROR("x = %f, y = %f", current_init_pose_ptr_->pose.pose.position.x, current_init_pose_ptr_->pose.pose.position.y);
+        ROS_ERROR("x = %f, y = %f", current_init_pose_ptr_->pose.pose.position.x - detection_distance, current_init_pose_ptr_->pose.pose.position.y - detection_distance);
 
         Vec3d goal_state = Vec3d(
             current_goal_pose_ptr_->pose.position.x,
             current_goal_pose_ptr_->pose.position.y,
             goal_yaw);
 
+        ROS_ERROR("33");
+
         if (kinodynamic_astar_searcher_ptr_->Search(start_state, goal_state))
         {
+            ROS_ERROR("Find Way");
             auto path = kinodynamic_astar_searcher_ptr_->GetPath();
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
             // ROS_ERROR("10-2 problem here");
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
-
-            // nav_msgs::Path path_ros;
-            // geometry_msgs::PoseStamped pose_stamped;
-
-            // for (const auto &pose : path)
-            // {
-            //     pose_stamped.header.frame_id = "vehicle_base_link";
-            //     pose_stamped.pose.position.x = pose.x();
-            //     pose_stamped.pose.position.y = pose.y();
-            //     pose_stamped.pose.position.z = 0.0;
-
-            //     pose_stamped.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose.z());
-
-            //     path_ros.poses.emplace_back(pose_stamped);
-            // }
-
-            // path_ros.header.frame_id = "vehicle_base_link";
-            // path_ros.header.stamp = ros::Time::now();
-            // static tf::TransformBroadcaster transform_broadcaster;
-            // for (const auto &pose : path_ros.poses)
-            // {
-            //     tf::Transform transform;
-            //     transform.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, 0.0));
-
-            //     tf::Quaternion q;
-            //     q.setX(pose.pose.orientation.x);
-            //     q.setY(pose.pose.orientation.y);
-            //     q.setZ(pose.pose.orientation.z);
-            //     q.setW(pose.pose.orientation.w);
-            //     transform.setRotation(q);
-
-            //     transform_broadcaster.sendTransform(tf::StampedTransform(transform,
-            //                                                              ros::Time::now(), "vehicle_base_link",
-            //                                                              "ground_link"));
-
-            //     ros::Duration(0.05).sleep();
-            // }
         }
 
+        ROS_ERROR("44");
         // debug
         //        std::cout << "visited nodes: " << kinodynamic_astar_searcher_ptr_->GetVisitedNodesNumber() << std::endl;
         kinodynamic_astar_searcher_ptr_->Reset();
+        ROS_ERROR("55");
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

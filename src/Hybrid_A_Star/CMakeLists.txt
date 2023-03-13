@@ -58,8 +58,20 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
+add_service_files(
+    FILES
+    mineServer.srv
+ )
+
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    pcl_msgs
+    sensor_msgs
+)
+
 catkin_package(
-  DEPENDS PCL roscpp
+  DEPENDS PCL roscpp message_generation
 )
 
 add_library(
@@ -82,3 +94,4 @@ target_link_libraries(
 
 add_executable(run_hybrid_astar app/run_hybrid_astar.cpp)
 target_link_libraries(run_hybrid_astar PATH_SEARCHER_LIB)
+add_dependencies(run_hybrid_astar hybrid_a_star_gencpp)

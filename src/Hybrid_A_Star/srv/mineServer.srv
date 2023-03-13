@@ -1,0 +1,15 @@
+int32 nodeID_Index
+int32 nodeID
+int32 mode
+# mode:
+# 1. get planned_path
+# 2. get nodeID_Index
+# 3. get vertexCloud
+
+
+# 101. set nodeID_Index
+---
+int32 nodeID_Index
+int32[] pathPlanned
+sensor_msgs/PointCloud2 localCloud
+# pcl_msgs/PolygonMesh w
