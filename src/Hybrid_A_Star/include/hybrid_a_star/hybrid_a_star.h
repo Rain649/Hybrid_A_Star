@@ -112,7 +112,6 @@ private:
     StateNode::Ptr terminal_node_ptr_ = nullptr;
     StateNode::Ptr ***state_node_map_ = nullptr;
 
-    // std::multimap<double, StateNode::Ptr> *openset_;
     std::shared_ptr<std::multimap<double, StateNode::Ptr>> openset_;
 
     double wheel_base_; // The distance between the front and rear axles

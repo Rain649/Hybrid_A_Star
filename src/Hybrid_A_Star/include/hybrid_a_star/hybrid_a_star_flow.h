@@ -18,8 +18,8 @@ public:
 
     void Run();
 
-private:
 
+private:
     void ReadData();
 
     void intersectionHandler(const std_msgs::Bool msg);
@@ -31,11 +31,16 @@ private:
     void PublishVehiclePath(const VectorVec3d &path, double width,
                             double length, unsigned int vehicle_interval);
 
+    void Reset_kinodynamic_astar_searcher();
+
+    inline void Init_kinodynamic_astar_searcher();
+
 private:
     std::shared_ptr<HybridAStar> kinodynamic_astar_searcher_ptr_;
     std::shared_ptr<CostMapSubscriber> costmap_sub_ptr_;
     std::shared_ptr<InitPoseSubscriber2D> init_pose_sub_ptr_;
     std::shared_ptr<GoalPoseSubscriber2D> goal_pose_sub_ptr_;
+
     ros::Subscriber subIntersection;
 
     ros::Publisher path_pub_;
@@ -48,7 +53,18 @@ private:
 
     ros::Time timestamp_;
 
-    bool has_map_, has_goal_, has_start_, intersectionVerified;
+    bool has_map_, has_goal_, has_start_, intersectionVerified, has_reset_;
+
+
+    double steering_angle;
+    int steering_angle_discrete_num;
+    double wheel_base;
+    double segment_length;
+    int segment_length_discrete_num;
+    double steering_penalty;
+    double steering_change_penalty;
+    double reversing_penalty;
+    double shot_distance;
 };
 
 #endif // HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H

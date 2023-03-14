@@ -26,19 +26,18 @@ double Mod2Pi(const double &x)
 
 HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
 {
-    double steering_angle = nh.param("planner/steering_angle", 10);
-    int steering_angle_discrete_num = nh.param("planner/steering_angle_discrete_num", 1);
-    double wheel_base = nh.param("planner/wheel_base", 1.0);
-    double segment_length = nh.param("planner/segment_length", 1.6);
-    int segment_length_discrete_num = nh.param("planner/segment_length_discrete_num", 8);
-    double steering_penalty = nh.param("planner/steering_penalty", 1.05);
-    double steering_change_penalty = nh.param("planner/steering_change_penalty", 1.5);
-    double reversing_penalty = nh.param("planner/reversing_penalty", 2.0);
-    double shot_distance = nh.param("planner/shot_distance", 3.0);
+    steering_angle = nh.param("planner/steering_angle", 10);
+    steering_angle_discrete_num = nh.param("planner/steering_angle_discrete_num", 1);
+    wheel_base = nh.param("planner/wheel_base", 1.0);
+    segment_length = nh.param("planner/segment_length", 1.6);
+    segment_length_discrete_num = nh.param("planner/segment_length_discrete_num", 8);
+    steering_penalty = nh.param("planner/steering_penalty", 1.05);
+    steering_change_penalty = nh.param("planner/steering_change_penalty", 1.5);
+    reversing_penalty = nh.param("planner/reversing_penalty", 2.0);
+    shot_distance = nh.param("planner/shot_distance", 3.0);
 
     kinodynamic_astar_searcher_ptr_ = std::make_shared<HybridAStar>(
-        steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
-        steering_penalty, reversing_penalty, steering_change_penalty, shot_distance);
+        steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base, steering_penalty, reversing_penalty, steering_change_penalty, shot_distance);
     costmap_sub_ptr_ = std::make_shared<CostMapSubscriber>(nh, "/lidarCloudProcess/cloud_Combined", 1);
     init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, "/navigation/intersectionOdom", 1);
     goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, "/navigation/targetPoint", 1);
@@ -51,6 +50,7 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh)
     has_goal_ = false;
     has_start_ = false;
     has_map_ = false;
+    has_reset_ = true;
 
     current_init_pose_ptr_ = boost::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
     current_goal_pose_ptr_ = boost::make_shared<geometry_msgs::PoseStamped>();
@@ -62,12 +62,32 @@ void HybridAStarFlow::intersectionHandler(const std_msgs::Bool msg)
     intersectionVerified = msg.data;
 }
 
+void HybridAStarFlow::Reset_kinodynamic_astar_searcher()
+{
+    kinodynamic_astar_searcher_ptr_.reset(new HybridAStar(steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base, steering_penalty, reversing_penalty, steering_change_penalty, shot_distance));
+}
+
+void HybridAStarFlow::Init_kinodynamic_astar_searcher()
+{
+    kinodynamic_astar_searcher_ptr_->Init(
+        current_costmap_ptr_->info.origin.position.x,
+        1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.x,
+        current_costmap_ptr_->info.origin.position.y,
+        1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.y,
+        current_costmap_ptr_->info.resolution);
+}
+
 void HybridAStarFlow::Run()
 {
     ReadData();
 
     if (!intersectionVerified || !has_start_ || !has_goal_ || !has_map_)
     {
+        if (!has_reset_)
+        {
+            Reset_kinodynamic_astar_searcher();
+            has_reset_ = true;
+        }
         return;
     }
     else
@@ -75,13 +95,7 @@ void HybridAStarFlow::Run()
         ROS_ERROR("Have enough flags to run");
         const double map_resolution = 0.2;
 
-        kinodynamic_astar_searcher_ptr_->Init(
-            current_costmap_ptr_->info.origin.position.x,
-            1.0 * current_costmap_ptr_->info.width * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.x,
-            current_costmap_ptr_->info.origin.position.y,
-            1.0 * current_costmap_ptr_->info.height * current_costmap_ptr_->info.resolution + current_costmap_ptr_->info.origin.position.y,
-            current_costmap_ptr_->info.resolution,
-            map_resolution);
+        Init_kinodynamic_astar_searcher();
 
         ROS_ERROR("11");
         unsigned int map_w = std::floor(current_costmap_ptr_->info.width / map_resolution);
@@ -136,6 +150,7 @@ void HybridAStarFlow::Run()
         //        std::cout << "visited nodes: " << kinodynamic_astar_searcher_ptr_->GetVisitedNodesNumber() << std::endl;
         kinodynamic_astar_searcher_ptr_->Reset();
         ROS_ERROR("55");
+        has_reset_ = false;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
