@@ -12,7 +12,7 @@
     <node pkg="rviz" type="rviz" name="rviz_Astar" args="-d $(find hybrid_a_star)/rviz/display_hybrid_astar.rviz"/>
 
     <!--static_transform_publisher x y z yaw pitch roll frame_id child_frame_id period_in_ms-->
-    <node pkg="tf" type="static_transform_publisher" name="link_broadcaster" args="-25 -25 0 0 0 0 localMap sg_map 1000"/>
+    <node pkg="tf" type="static_transform_publisher" name="link_broadcaster" args="-25 -25 -0.4 0 0 0 localMap sg_map 1000"/>
 
     <node pkg="hybrid_a_star" type="run_hybrid_astar" name="run_hybrid_astar" output="screen">
     
@@ -22,7 +22,7 @@
         <param name="planner/steering_angle_discrete_num" value="3"/>
         <param name="planner/wheel_base" value="2.88"/>
         <param name="planner/segment_length" value="3.2"/>
-        <param name="planner/segment_length_discrete_num" value="4"/>
+        <param name="planner/segment_length_discrete_num" value="8"/>
         <param name="planner/steering_penalty" value="1.5"/>
         <param name="planner/reversing_penalty" value="100.0"/>
         <param name="planner/steering_change_penalty" value="2"/>
