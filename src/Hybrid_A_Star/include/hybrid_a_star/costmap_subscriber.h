@@ -37,7 +37,8 @@ public:
     float x, y, yaw, u, w;
 };
 
-class CostMapSubscriber {
+class CostMapSubscriber
+{
 public:
     CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size);
     void ParseData(nav_msgs::OccupancyGridPtr &data, bool &flag);
@@ -51,7 +52,7 @@ private:
 
 private:
     ros::Subscriber subscriber_, OdomSub, TargetSub, LidarSub;
-    ros::Publisher MapPub;
+    ros::Publisher MapPub, LocalMapPub;
 
     // callback flag
     bool odom_flag, target_flag, map_flag, tf_flag;
@@ -65,6 +66,7 @@ private:
     VehState current_state;
 
     // local map
+    sensor_msgs::PointCloud2 localCloud;
     pcl::PointCloud<pcl::PointXYZ>::Ptr localVertexCloud;
 
     // msg
@@ -72,11 +74,11 @@ private:
 
     // map
     std::vector<signed char> map_vec;
-    cv::Mat image_map; // 二值化地图
-    cv::Mat image_dis; // 距离地图
+    cv::Mat image_map;      // 二值化地图
+    cv::Mat image_dis;      // 距离地图
     int map_rows, map_cols; // 地图行数、列数
     float map_o_x, map_o_y; // 原点
-    float map_res; // 分辨率
+    float map_res;          // 分辨率
     int index_row, index_col;
 
     // // Dubins/Reeds-Shepp曲线
@@ -92,9 +94,9 @@ private:
     pcl::PassThrough<pcl::PointXYZ> pass_z;
     pcl::VoxelGrid<pcl::PointXYZ> downSizeFilter;
 
-    //server
+    // server
     ros::ServiceClient client;
     hybrid_a_star::mineServer addsrv;
 };
 
-#endif //HYBRID_A_STAR_COSTMAP_SUBSCRIBER_H
+#endif // HYBRID_A_STAR_COSTMAP_SUBSCRIBER_H

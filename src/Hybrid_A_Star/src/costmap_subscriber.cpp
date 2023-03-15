@@ -18,6 +18,7 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     image_map.create(map_rows, map_cols, CV_8UC1);
 
     MapPub = nh.advertise<nav_msgs::OccupancyGrid>("/cost_map", 1);
+    LocalMapPub = nh.advertise<sensor_msgs::PointCloud2>("/local_map", 1);
     map_msg.reset(new nav_msgs::OccupancyGrid());
     nh.param<std::string>("frame_id", map_msg->header.frame_id, "sg_map");
     map_msg->info.resolution = map_res;
@@ -50,14 +51,13 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
     localVertexCloud->header.frame_id = "localMap";
     LaserCloudSurround.reset(new pcl::PointCloud<pcl::PointXYZ>());
     LaserCloudSurroundFiltered.reset(new pcl::PointCloud<pcl::PointXYZ>());
-
 }
 
 void CostMapSubscriber::ParseData(nav_msgs::OccupancyGridPtr &data, bool &flag)
 {
     *data = *map_msg;
     flag = map_flag;
-    if(flag == true)
+    if (flag == true)
     {
         map_flag = false;
     }
@@ -107,8 +107,10 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
         }
     }
     client.call(addsrv);
-    sensor_msgs::PointCloud2 localCloud = addsrv.response.localCloud;
-    pcl::moveFromROSMsg(localCloud, *localVertexCloud);
+    localCloud = addsrv.response.localCloud;
+    localCloud.header.frame_id = "localMap";
+    pcl::fromROSMsg(localCloud, *localVertexCloud);
+    localCloud.header.stamp = ros::Time::now();
     *LaserCloudSurround += *localVertexCloud;
 
     for (auto &i : *LaserCloudSurround)
@@ -164,5 +166,6 @@ void CostMapSubscriber::LidarCallback(const sensor_msgs::PointCloud2ConstPtr &ms
     map_msg->data = map_vec;
     map_msg->header.stamp = ros::Time::now();
     MapPub.publish(*map_msg);
+    LocalMapPub.publish(localCloud);
     map_flag = true;
 }
