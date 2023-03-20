@@ -230,7 +230,7 @@ void HybridAStarFlow::PublishSearchedTree(const VectorVec4d &searched_tree)
     tree_list.type = visualization_msgs::Marker::LINE_LIST;
     tree_list.action = visualization_msgs::Marker::ADD;
     tree_list.ns = "searched_tree";
-    tree_list.scale.x = 0.02;
+    tree_list.scale.x = 0.05;
 
     tree_list.color.a = 1.0;
     tree_list.color.r = 0;
